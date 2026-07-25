@@ -42,13 +42,12 @@ code, pre {
 /* ===== Sidebar ===== */
 .sidebar {
   width: 260px;
-  background: rgba(23, 23, 23, 0.85);
-  backdrop-filter: blur(12px);
+  background: transparent;
   display: flex;
   flex-direction: column;
   padding: 12px;
   gap: 8px;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .sidebar-brand {
@@ -56,9 +55,10 @@ code, pre {
   align-items: center;
   gap: 10px;
   padding: 8px 8px 12px;
-  color: #ececf1;
+  color: #fff;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000;
 }
 
 .sidebar-logo {
@@ -66,8 +66,8 @@ code, pre {
   height: 36px;
   border-radius: 8px;
   object-fit: cover;
-  border: 1px solid #3d3d3d;
-  background: #0f0f0f;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.3);
 }
 
 .new-chat-btn {
@@ -75,22 +75,24 @@ code, pre {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid #444;
+  border: 1px solid rgba(255,255,255,0.2);
   border-radius: 8px;
   background: transparent;
-  color: #ececf1;
+  color: #fff;
   font-size: 14px;
+  font-weight: 700;
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000;
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .new-chat-btn:hover {
-  background: #2a2a2a;
+  background: rgba(255,255,255,0.1);
 }
 
 .sidebar-divider {
   height: 1px;
-  background: #333;
+  background: rgba(255,255,255,0.15);
   margin: 4px 0;
 }
 
@@ -104,7 +106,9 @@ code, pre {
 
 .sidebar-info p {
   font-size: 12px;
-  color: #888;
+  color: #fff;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000;
   padding: 8px;
   line-height: 1.5;
 }
@@ -163,13 +167,16 @@ code, pre {
 
 .welcome-title {
   font-size: 22px;
-  font-weight: 600;
-  color: #ececf1;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 2px 2px 4px #000, -1px -1px 3px #000, 1px -1px 3px #000, -1px 1px 3px #000;
 }
 
 .welcome-subtitle {
   font-size: 14px;
-  color: #888;
+  color: #fff;
+  font-weight: 600;
+  text-shadow: 1px 1px 3px #000, -1px -1px 2px #000;
   max-width: 400px;
   line-height: 1.6;
 }
@@ -184,12 +191,14 @@ code, pre {
 }
 
 .example-card {
-  background: #2f2f2f;
-  border: 1px solid #3d3d3d;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
   border-radius: 10px;
   padding: 12px 14px;
   font-size: 13px;
-  color: #d4d4d4;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
   text-align: left;
@@ -197,8 +206,8 @@ code, pre {
 }
 
 .example-card:hover {
-  background: #383838;
-  border-color: #555;
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.35);
 }
 
 /* ===== Messages ===== */
@@ -209,7 +218,7 @@ code, pre {
 
 .message {
   padding: 24px 0;
-  border-bottom: 1px solid #2f2f2f;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 .message:last-child {
@@ -236,18 +245,18 @@ code, pre {
 }
 
 .message-avatar.user {
-  background: #5436da;
+  background: rgba(100,60,220,0.6);
   color: white;
 }
 
 .message-avatar.system {
-  background: #171717;
-  border: 1px solid #444;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
 .message-avatar.ai {
-  background: #0f0f0f;
-  border: 1px solid #3d3d3d;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
   overflow: hidden;
 }
 
@@ -265,15 +274,18 @@ code, pre {
 
 .message-role-label {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 6px;
-  color: #ececf1;
+  color: #fff;
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
 }
 
 .message-text {
   font-size: 15px;
+  font-weight: 600;
   line-height: 1.65;
-  color: #d4d4d4;
+  color: #fff;
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
   white-space: pre-wrap;
 }
 
@@ -314,10 +326,12 @@ code, pre {
   align-items: center;
   gap: 6px;
   padding: 10px 14px;
-  background: #332020;
+  background: rgba(255,80,80,0.15);
+  border: 1px solid rgba(255,80,80,0.25);
   font-size: 13px;
-  font-weight: 600;
-  color: #f87171;
+  font-weight: 700;
+  color: #ff8888;
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
 }
 
 .detection-item {
@@ -325,8 +339,11 @@ code, pre {
   align-items: flex-start;
   gap: 8px;
   padding: 8px 14px;
-  border-top: 1px solid #3d2525;
+  border-top: 1px solid rgba(255,80,80,0.15);
   font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
 }
 
 .detection-type-badge {
@@ -383,15 +400,16 @@ code, pre {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  background: #353535;
-  border: 1px solid #444;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
   border-radius: 12px;
   padding: 8px 8px 8px 16px;
   transition: border-color 0.15s;
 }
 
 .input-wrapper:focus-within {
-  border-color: #6b6b6b;
+  border-color: rgba(255,255,255,0.4);
 }
 
 .chat-input {
@@ -399,8 +417,10 @@ code, pre {
   background: transparent;
   border: none;
   outline: none;
-  color: #ececf1;
+  color: #fff;
   font-size: 15px;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
   line-height: 1.5;
   resize: none;
   max-height: 200px;
@@ -408,7 +428,8 @@ code, pre {
 }
 
 .chat-input::placeholder {
-  color: #888;
+  color: rgba(255,255,255,0.6);
+  text-shadow: 1px 1px 2px #000;
 }
 
 .send-btn {
@@ -416,8 +437,8 @@ code, pre {
   height: 36px;
   border-radius: 8px;
   border: none;
-  background: #6b6b6b;
-  color: #171717;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -746,62 +767,64 @@ code, pre {
   left: 70px;
 }
 
-/* ===== Sunlight Beams ===== */
+/* ===== Sun Rays ===== */
 .sunbeam {
   position: absolute;
-  background: linear-gradient(135deg, rgba(255,235,150,0.25) 0%, rgba(255,235,150,0.08) 40%, transparent 70%);
-  transform-origin: top right;
+  top: -50px;
+  left: -50px;
+  transform-origin: top left;
+  clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%);
+  background: linear-gradient(180deg, rgba(255,220,100,0.35) 0%, rgba(255,220,100,0.15) 30%, rgba(255,220,100,0.04) 65%, transparent 100%);
 }
 
 .sunbeam-1 {
-  width: 400px;
-  height: 1200px;
-  top: -200px;
-  right: -100px;
-  transform: rotate(-25deg);
-  animation: beamFloat1 12s ease-in-out infinite;
+  width: 700px;
+  height: 1100px;
+  transform: rotate(15deg);
+  animation: beamDrift1 12s ease-in-out infinite;
 }
 
 .sunbeam-2 {
-  width: 300px;
-  height: 1100px;
-  top: -150px;
-  right: 50px;
-  transform: rotate(-35deg);
-  animation: beamFloat2 14s ease-in-out infinite;
+  width: 650px;
+  height: 1050px;
+  transform: rotate(28deg);
+  animation: beamDrift2 14s ease-in-out infinite;
 }
 
 .sunbeam-3 {
-  width: 250px;
+  width: 600px;
   height: 1000px;
-  top: -100px;
-  right: 180px;
-  transform: rotate(-45deg);
-  animation: beamFloat3 11s ease-in-out infinite;
+  transform: rotate(40deg);
+  animation: beamDrift3 11s ease-in-out infinite;
 }
 
 .sunbeam-4 {
-  width: 200px;
+  width: 550px;
+  height: 950px;
+  transform: rotate(52deg);
+  animation: beamDrift1 13s ease-in-out infinite reverse;
+}
+
+.sunbeam-5 {
+  width: 500px;
   height: 900px;
-  top: -80px;
-  right: 280px;
-  transform: rotate(-55deg);
-  animation: beamFloat1 13s ease-in-out infinite reverse;
+  transform: rotate(63deg);
+  animation: beamDrift2 10s ease-in-out infinite;
 }
 
-@keyframes beamFloat1 {
-  0%, 100% { opacity: 0.6; transform: rotate(-25deg) translateY(0); }
-  50% { opacity: 0.9; transform: rotate(-22deg) translateY(15px); }
+@keyframes beamDrift1 {
+  0%, 100% { opacity: 0.7; transform: rotate(15deg); }
+  50% { opacity: 1; transform: rotate(17deg); }
 }
 
-@keyframes beamFloat2 {
-  0%, 100% { opacity: 0.5; transform: rotate(-35deg) translateY(0); }
-  50% { opacity: 0.8; transform: rotate(-32deg) translateY(20px); }
+@keyframes beamDrift2 {
+  0%, 100% { opacity: 0.6; transform: rotate(28deg); }
+  50% { opacity: 0.95; transform: rotate(30deg); }
 }
 
-@keyframes beamFloat3 {
-  0%, 100% { opacity: 0.55; transform: rotate(-45deg) translateY(0); }
-  50% { opacity: 0.85; transform: rotate(-42deg) translateY(12px); }
+@keyframes beamDrift3 {
+  0%, 100% { opacity: 0.65; transform: rotate(40deg); }
+  50% { opacity: 1; transform: rotate(42deg); }
 }
 
 /* Ensure content sits above clouds */
