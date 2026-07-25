@@ -94,7 +94,7 @@ def _detect_emails(text: str, results: List[Dict[str, Any]]) -> None:
 def _detect_money(text: str, results: List[Dict[str, Any]]) -> None:
     for match in MONEY_RE.finditer(text):
         candidate = match.group(0).strip()
-        if candidate.startswith("$") or any(token in candidate.lower() for token in ["million", "billion", "thousand", "m", "bn", "k"]):
+        if candidate.startswith("$") or "," in candidate or any(token in candidate.lower() for token in ["million", "billion", "thousand", "m", "bn", "k"]):
             _add_result(results, "MONEY", candidate, match.start(), match.end())
 
 

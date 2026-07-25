@@ -61,7 +61,7 @@ function SanitizedPrompt({ prompt }: { prompt: string }) {
     <div className="sanitized-section">
       <button className="sanitized-toggle" onClick={() => setOpen(!open)}>
         <span>{open ? '▼' : '▶'}</span>
-        <span>What Gemini actually saw (PII masked)</span>
+        <span>What the model actually saw (PII masked)</span>
       </button>
       {open && (
         <pre className="sanitized-text">{prompt}</pre>
@@ -219,7 +219,7 @@ export default function App() {
         <div className="sidebar-divider" />
         <div className="sidebar-info">
           <p>
-            Aegis Shield detects sensitive information in your messages, masks it before sending to Gemini, then restores it in the response.
+            Aegis Shield detects sensitive information in your messages, masks it before sending to the AI model, then restores it in the response.
           </p>
         </div>
       </aside>
@@ -232,7 +232,7 @@ export default function App() {
               <h1 className="welcome-title">Aegis Shield</h1>
               <p className="welcome-subtitle">
                 Your privacy-safe AI chatbot. PII is automatically detected, masked before
-                reaching Gemini, and restored in the response.
+                reaching the AI model, and restored in the response.
               </p>
               <div className="welcome-examples">
                 {EXAMPLES.map((ex, i) => (
