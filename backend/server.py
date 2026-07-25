@@ -16,7 +16,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from gemini_gateway import process_prompt
+from ollama_gateway import process_prompt
 
 FRONTEND_DIST = os.path.join(PROJECT_ROOT, "frontend", "dist")
 
@@ -97,12 +97,15 @@ class AegisHandler(http.server.SimpleHTTPRequestHandler):
         sys.stderr.flush()
 
 
+class ReusableTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
+
 def run_server(port=None):
     if port is None:
         port = int(os.environ.get("PORT", 8080))
 
-    with socketserver.TCPServer(("", port), AegisHandler) as httpd:
-        httpd.allow_reuse_address = True
+    with ReusableTCPServer(("", port), AegisHandler) as httpd:
         print(f"Aegis Shield server running on http://localhost:{port}")
         sys.stdout.flush()
         try:

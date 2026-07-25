@@ -206,6 +206,13 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
+# Server logs/errors
+server.err
+server.log
+
+# Compressed archives
+*.tar.gz
+
 # Ruff stuff:
 .ruff_cache/
 

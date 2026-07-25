@@ -1,4 +1,5 @@
 import json
+import math
 import re
 import sys
 from typing import Any, Dict, List, Optional
@@ -209,7 +210,7 @@ def _estimate_entropy(value: str) -> float:
     entropy = 0.0
     for count in freq.values():
         p = count / length
-        entropy -= p * (p and (p * (1 / p)))
+        entropy -= p * math.log2(p)
     return entropy
 
 
@@ -230,6 +231,8 @@ def _detect_with_spacy(text: str, results: List[Dict[str, Any]]) -> None:
                 cleaned_value = re.sub(r"[\.,;:]+.*$", "", cleaned_value).strip()
                 if not cleaned_value or cleaned_value.isupper() and len(cleaned_value) <= 3:
                     continue
+                if "@" in cleaned_value or "@" in text[ent.start_char:ent.end_char]:
+                    continue
                 raw_value = cleaned_value
 
             _add_result(results, ent.label_ if ent.label_ != "ORGANIZATION" else "ORG", raw_value, ent.start_char, ent.end_char)
@@ -248,16 +251,11 @@ def _detect_emails(text: str, results: List[Dict[str, Any]]) -> None:
 def _detect_money(text: str, results: List[Dict[str, Any]]) -> None:
     for match in MONEY_RE.finditer(text):
         candidate = match.group(0).strip()
-<<<<<<< HEAD
-        if candidate.startswith("$") or any(
+        if candidate.startswith("$") or "," in candidate or any(
             token in candidate.lower() for token in ["million", "billion", "thousand", "m", "bn", "k"]
         ):
             if not _overlaps(results, match.start(), match.end()):
                 _add_result(results, "MONEY", candidate, match.start(), match.end())
-=======
-        if candidate.startswith("$") or "," in candidate or any(token in candidate.lower() for token in ["million", "billion", "thousand", "m", "bn", "k"]):
-            _add_result(results, "MONEY", candidate, match.start(), match.end())
->>>>>>> b1925b588cd9e56fbfbb2e0fc6a9ae97ebdc22b7
 
 
 def _detect_secrets(text: str, results: List[Dict[str, Any]]) -> None:
