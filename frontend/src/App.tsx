@@ -219,11 +219,7 @@ export default function App() {
   return (
     <div className="app">
       <div className="clouds-container">
-        <div className="sunbeam sunbeam-1"></div>
-        <div className="sunbeam sunbeam-2"></div>
-        <div className="sunbeam sunbeam-3"></div>
-        <div className="sunbeam sunbeam-4"></div>
-        <div className="sunbeam sunbeam-5"></div>
+        <div className="sunbeam"></div>
         <div className="cloud cloud-1"><div className="cloud-core"></div></div>
         <div className="cloud cloud-2"><div className="cloud-core"></div></div>
         <div className="cloud cloud-3"><div className="cloud-core"></div></div>

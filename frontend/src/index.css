@@ -767,64 +767,30 @@ code, pre {
   left: 70px;
 }
 
-/* ===== Sun Rays ===== */
+/* ===== Sun Ray ===== */
 .sunbeam {
   position: absolute;
-  top: -50px;
-  left: -50px;
-  transform-origin: top left;
-  clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%);
-  background: linear-gradient(180deg, rgba(255,220,100,0.35) 0%, rgba(255,220,100,0.15) 30%, rgba(255,220,100,0.04) 65%, transparent 100%);
-}
-
-.sunbeam-1 {
-  width: 700px;
-  height: 1100px;
-  transform: rotate(15deg);
-  animation: beamDrift1 12s ease-in-out infinite;
-}
-
-.sunbeam-2 {
-  width: 650px;
-  height: 1050px;
-  transform: rotate(28deg);
-  animation: beamDrift2 14s ease-in-out infinite;
-}
-
-.sunbeam-3 {
-  width: 600px;
-  height: 1000px;
-  transform: rotate(40deg);
-  animation: beamDrift3 11s ease-in-out infinite;
-}
-
-.sunbeam-4 {
-  width: 550px;
-  height: 950px;
-  transform: rotate(52deg);
-  animation: beamDrift1 13s ease-in-out infinite reverse;
-}
-
-.sunbeam-5 {
-  width: 500px;
+  top: -150px;
+  right: -150px;
+  width: 900px;
   height: 900px;
-  transform: rotate(63deg);
-  animation: beamDrift2 10s ease-in-out infinite;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 100% 0%,
+    rgba(255,220,100,0.3) 0%,
+    rgba(255,220,100,0.12) 25%,
+    rgba(255,220,100,0.04) 50%,
+    transparent 75%
+  );
+  transform: rotate(-30deg) scaleY(1.6);
+  transform-origin: top right;
+  filter: blur(30px);
+  animation: beamPulse 10s ease-in-out infinite;
 }
 
-@keyframes beamDrift1 {
-  0%, 100% { opacity: 0.7; transform: rotate(15deg); }
-  50% { opacity: 1; transform: rotate(17deg); }
-}
-
-@keyframes beamDrift2 {
-  0%, 100% { opacity: 0.6; transform: rotate(28deg); }
-  50% { opacity: 0.95; transform: rotate(30deg); }
-}
-
-@keyframes beamDrift3 {
-  0%, 100% { opacity: 0.65; transform: rotate(40deg); }
-  50% { opacity: 1; transform: rotate(42deg); }
+@keyframes beamPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }
 
 /* Ensure content sits above clouds */
