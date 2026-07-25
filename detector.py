@@ -73,6 +73,29 @@ ADDRESS_NAME_RE = re.compile(
     r"\b\d{1,5}\s+(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})\b"
 )
 
+ADDRESS_NO_NUMBER_RE = re.compile(
+    r"""
+    \b(?:(?:house|apartment|apt|unit|floor|suite|building|bldg)\s+)?
+    ([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,1})
+    \s+
+    (?:Street|St|Avenue|Ave|Boulevard|Blvd|Drive|Dr|Court|Ct|Road|Rd|
+       Lane|Ln|Way|Place|Pl|Circle|Cir|Trail|Trl|Parkway|Pkwy|Highway|Hwy)\b
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+# Context-aware lowercase org: "the company X", "works at X", "employed by X"
+CONTEXT_ORG_RE = re.compile(
+    r"""
+    (?:the\s+)?(?:company|corporation|firm|agency|business|startup|organization)\s+
+    ([A-Z][A-Za-z0-9&.]{1,30})
+    |
+    (?:works?\s+at|employed\s+by|founder\s+of|ceo\s+of|works\s+for)\s+
+    ([A-Z][A-Za-z0-9&.]{1,30})
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
 MEDICAL_RE = re.compile(
     r"""
     (?:
@@ -342,6 +365,25 @@ def _detect_addresses(text: str, results: List[Dict[str, Any]]) -> None:
     for match in ADDRESS_NAME_RE.finditer(text):
         if not _overlaps(results, match.start(), match.end()):
             _add_result(results, "ADDRESS", match.group(0), match.start(), match.end())
+    for match in ADDRESS_NO_NUMBER_RE.finditer(text):
+        value = match.group(0).strip()
+        value = re.sub(r"^(?:at|on|in|by|near|from)\s+", "", value, flags=re.IGNORECASE)
+        if value and not _overlaps(results, match.start(), match.end()):
+            _add_result(results, "ADDRESS", value, match.start(), match.end())
+
+
+def _detect_context_orgs(text: str, results: List[Dict[str, Any]]) -> None:
+    for match in CONTEXT_ORG_RE.finditer(text):
+        value = (match.group(1) or match.group(2) or "").strip()
+        value = re.sub(r"\s+", " ", value).strip().rstrip(",.;:!?)")
+        if not value or len(value) < 2:
+            continue
+        # Find the actual start of the org name within the match
+        org_start = match.group(0).index(value)
+        start = match.start() + org_start
+        end = start + len(value)
+        if not _overlaps(results, start, end):
+            _add_result(results, "ORG", value, start, end)
 
 
 def _detect_medical(text: str, results: List[Dict[str, Any]]) -> None:
@@ -451,6 +493,9 @@ def detect_sensitive_info(text: str) -> List[Dict[str, Any]]:
     # Address detection BEFORE secrets to avoid overlap conflicts
     _detect_addresses(text, results)
 
+    # Context-aware org detection (catches lowercase names after "the company X", etc.)
+    _detect_context_orgs(text, results)
+
     _detect_contextual_secrets(text, results)
     _detect_secrets(text, results)
     _detect_bank_accounts(text, results)
@@ -484,6 +529,16 @@ def detect_sensitive_info(text: str) -> List[Dict[str, Any]]:
     for det in results:
         if det["type"] == "PERSON" and ORG_RE.fullmatch(det["value"]):
             det["type"] = "ORG"
+
+    # Filter out single-word ORG false positives (common words spaCy mislabels)
+    org_stop_words = {
+        "the", "a", "an", "this", "that", "these", "those", "it", "its",
+        "my", "his", "her", "our", "your", "their", "who", "which", "what",
+    }
+    results = [
+        d for d in results
+        if not (d["type"] == "ORG" and d["value"].lower().strip() in org_stop_words)
+    ]
 
     results.sort(key=lambda item: (item["start"], item["end"], item["type"]))
     return results
