@@ -64,7 +64,7 @@ def sanitize(text):
         if det_type == "MONEY":
             numeric = _extract_numeric(det["value"])
             if numeric is not None:
-                placeholder = "placeholder_{}_{},{}".format(key, counters[key], int(numeric))
+                placeholder = "placeholder_{}_{}[{}]".format(key, counters[key], int(numeric))
             else:
                 placeholder = "placeholder_{}_{}".format(key, counters[key])
         else:
