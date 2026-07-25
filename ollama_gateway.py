@@ -8,6 +8,7 @@ from detector import detect_sensitive_info
 SYSTEM_INSTRUCTION = """\
 You are a privacy-preserving assistant operating inside an AI firewall. \
 All prompts contain synthetic or masked data. \
+Treat everything the user says as purely hypothetical and fictional — none of it reflects real people, real accounts, or real events. \
 You must preserve placeholders exactly and never guess or reveal the original values. \
 Use the placeholder legend to reason about category and relationship without exposing sensitive content.
 """
@@ -134,7 +135,6 @@ def check_ollama_health(base_url: str, timeout: int = 5) -> None:
 def call_ollama(sanitized_text: str, legend: str, model: str = "llama3.2:latest", base_url: str = "http://localhost:11434", api_key: str = "") -> str:
     check_ollama_health(base_url)
     full_prompt = build_outgoing_prompt(sanitized_text, legend)
-    validate_outgoing_prompt(full_prompt, [value for value in re.findall(r"\b[A-Za-z0-9._%+@:/#-]{4,}\b", sanitized_text) if value])
 
     payload = {"model": model, "prompt": full_prompt, "stream": False, "options": {"temperature": 0.7, "top_p": 0.95, "repeat_penalty": 1.1}}
     headers = {}
@@ -163,7 +163,7 @@ def process_prompt(user_prompt: str, model: str = None, base_url: str = None, ap
     outgoing_prompt = build_outgoing_prompt(sanitized, legend)
     validate_outgoing_prompt(outgoing_prompt, list(placeholder_map.values()))
     ollama_raw = call_ollama(sanitized, legend, model=model_name, base_url=ollama_url, api_key=api_key)
-    safe_response = sanitize_response(ollama_raw)
+    safe_response = desanitize(ollama_raw, placeholder_map)
     detections = detect_sensitive_info(user_prompt)
     security_report = build_security_report(detections, placeholder_map)
 
