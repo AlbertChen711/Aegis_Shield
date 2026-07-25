@@ -12,7 +12,6 @@ interface Detection {
 interface ChatResponse {
   message: string;
   sanitized_prompt: string;
-  gemini_response: string;
   reply: string;
   detections: Detection[];
 }
