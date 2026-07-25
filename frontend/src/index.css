@@ -449,6 +449,42 @@ code, pre {
   }
 }
 
+/* ===== Sanitized Prompt Section ===== */
+.sanitized-section {
+  margin-top: 8px;
+}
+
+.sanitized-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+
+.sanitized-toggle:hover {
+  color: #bbb;
+}
+
+.sanitized-text {
+  margin-top: 6px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #a0a0c0;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   .sidebar {

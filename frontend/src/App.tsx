@@ -11,18 +11,17 @@ interface Detection {
 
 interface ChatResponse {
   message: string;
-  detections: Detection[];
-  summary: {
-    total: number;
-    by_type: Record<string, number>;
-  };
+  sanitized_prompt: string;
+  gemini_response: string;
   reply: string;
+  detections: Detection[];
 }
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  sanitizedPrompt?: string;
   detections?: Detection[];
   timestamp: Date;
 }
@@ -44,7 +43,7 @@ function DetectionsPanel({ detections }: { detections: Detection[] }) {
     <div className="detections-panel">
       <div className="detections-header">
         <span>⚠️</span>
-        <span>{detections.length} sensitive item(s) detected</span>
+        <span>{detections.length} sensitive item(s) detected and masked</span>
       </div>
       {detections.map((d, i) => (
         <div className="detection-item" key={i}>
@@ -52,6 +51,22 @@ function DetectionsPanel({ detections }: { detections: Detection[] }) {
           <span className="detection-value">{d.value}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function SanitizedPrompt({ prompt }: { prompt: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="sanitized-section">
+      <button className="sanitized-toggle" onClick={() => setOpen(!open)}>
+        <span>{open ? '▼' : '▶'}</span>
+        <span>What Gemini actually saw (PII masked)</span>
+      </button>
+      {open && (
+        <pre className="sanitized-text">{prompt}</pre>
+      )}
     </div>
   );
 }
@@ -70,8 +85,11 @@ function MessageBubble({ message }: { message: Message }) {
             {isUser ? 'You' : 'Aegis Shield'}
           </div>
           <div className="message-text">{message.content}</div>
-          {!isUser && message.detections && (
+          {!isUser && message.detections && message.detections.length > 0 && (
             <DetectionsPanel detections={message.detections} />
+          )}
+          {!isUser && message.sanitizedPrompt && (
+            <SanitizedPrompt prompt={message.sanitizedPrompt} />
           )}
         </div>
       </div>
@@ -115,7 +133,6 @@ export default function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -146,7 +163,8 @@ export default function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${response.status}`);
       }
 
       const data: ChatResponse = await response.json();
@@ -155,6 +173,7 @@ export default function App() {
         id: generateId(),
         role: 'assistant',
         content: data.reply,
+        sanitizedPrompt: data.sanitized_prompt,
         detections: data.detections,
         timestamp: new Date(),
       };
@@ -193,31 +212,28 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* Sidebar */}
       <aside className="sidebar">
         <button className="new-chat-btn" onClick={handleNewChat}>
-          <span>＋</span>
+          <span>+</span>
           <span>New Chat</span>
         </button>
         <div className="sidebar-divider" />
         <div className="sidebar-info">
           <p>
-            Aegis Shield detects sensitive information in your messages including emails, phone numbers, monetary values, and secrets.
+            Aegis Shield detects sensitive information in your messages, masks it before sending to Gemini, then restores it in the response.
           </p>
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="main-content">
-        {/* Chat Area */}
         <div className="chat-container">
           {messages.length === 0 ? (
             <div className="welcome-screen">
               <div className="welcome-icon">🛡️</div>
               <h1 className="welcome-title">Aegis Shield</h1>
               <p className="welcome-subtitle">
-                Paste or type any text to detect sensitive information like emails, phone numbers,
-                monetary values, API keys, and secrets.
+                Your privacy-safe AI chatbot. PII is automatically detected, masked before
+                reaching Gemini, and restored in the response.
               </p>
               <div className="welcome-examples">
                 {EXAMPLES.map((ex, i) => (
@@ -242,7 +258,6 @@ export default function App() {
           )}
         </div>
 
-        {/* Input Area */}
         <div className="input-area">
           <div className="input-container">
             <form onSubmit={handleSubmit}>
