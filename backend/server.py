@@ -1,45 +1,120 @@
 #!/usr/bin/env python3
 """Aegis Shield - Chat API Server
 
-HTTP server that proxies user prompts through the Gemini API with
-automatic PII detection, masking, and restoration.
+Minimal HTTP server that exposes the sensitive-info detector as a REST API,
+and serves the frontend static files.
 """
 
 import json
-import os
+import re
 import sys
 import http.server
 import socketserver
+import os
 from urllib.parse import urlparse
 
+# ---------------------------------------------------------------------------
+# Detector logic (duplicated from detector.py so this file is self-contained)
+# ---------------------------------------------------------------------------
+
+EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
+
+MONEY_RE = re.compile(
+    r"""
+    (?:
+        \$\s?\d{1,3}(?:,\d{3})*(?:\.\d+)? |
+        \$?\d+(?:,\d{3})*(?:\.\d+)?(?:\s*(?:million|billion|thousand|m|bn|k))?
+    )
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+SECRET_RE = re.compile(
+    r"""
+    (?:
+        (?:api[_-]?key|access[_-]?token|client[_-]?secret|secret[_-]?key|token|password|auth[_-]?token)
+        \s*[:=]\s*([A-Za-z0-9_\-]{6,})
+        |
+        \b(?:sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{16,}|AIza[0-9A-Za-z\-_]{35}|xox[baprs]-[A-Za-z0-9-]{10,})\b
+    )
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+PHONE_RE = re.compile(
+    r"(?<![A-Za-z0-9-])(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{2,4}\)?[-.\s]?){1,2}\d{3,4}(?![A-Za-z0-9])"
+)
+
+
+def _add_result(results, entity_type, value, start, end):
+    results.append({
+        "type": entity_type,
+        "value": value,
+        "start": start,
+        "end": end,
+    })
+
+
+def _detect_emails(text, results):
+    for match in EMAIL_RE.finditer(text):
+        _add_result(results, "EMAIL", match.group(0), match.start(), match.end())
+
+
+def _detect_money(text, results):
+    for match in MONEY_RE.finditer(text):
+        candidate = match.group(0).strip()
+        if candidate.startswith("$") or any(
+            token in candidate.lower() for token in ["million", "billion", "thousand", "m", "bn", "k"]
+        ):
+            _add_result(results, "MONEY", candidate, match.start(), match.end())
+
+
+def _detect_secrets(text, results):
+    for match in SECRET_RE.finditer(text):
+        value = match.group(0).strip()
+        _add_result(results, "SECRET", value, match.start(), match.end())
+
+
+def _detect_phones(text, results):
+    for match in PHONE_RE.finditer(text):
+        value = match.group(0).strip()
+        _add_result(results, "PHONE", value, match.start(), match.end())
+
+
+def detect_sensitive_info(text):
+    """Return structured sensitive-entity detections for the provided text."""
+    if not text:
+        return []
+
+    results = []
+    _detect_emails(text, results)
+    _detect_money(text, results)
+    _detect_secrets(text, results)
+    _detect_phones(text, results)
+
+    results.sort(key=lambda item: (item["start"], item["end"], item["type"]))
+    return results
+
+
+# ---------------------------------------------------------------------------
+# HTTP Handler
+# ---------------------------------------------------------------------------
+
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
-from gemini_gateway import process_prompt
-
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 FRONTEND_DIST = os.path.join(PROJECT_ROOT, "frontend", "dist")
 
 
 class AegisHandler(http.server.SimpleHTTPRequestHandler):
-    """Handles API routes and serves static files from frontend/dist."""
+    """Handles API routes and serves static files."""
 
     def __init__(self, *args, **kwargs):
         if os.path.isdir(FRONTEND_DIST):
             kwargs["directory"] = FRONTEND_DIST
         super().__init__(*args, **kwargs)
 
-    def do_OPTIONS(self):
-        self.send_response(204)
-        self._cors_headers()
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.end_headers()
-
     def do_GET(self):
         parsed = urlparse(self.path)
-        if parsed.path == "/api/detect":
+        if parsed.path == "/api/detect" or parsed.path == "/api/chat":
             self.do_POST()
         else:
             if parsed.path == "/":
@@ -50,21 +125,12 @@ class AegisHandler(http.server.SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
 
-        if path == "/api/detect":
-            self._handle_chat()
-        elif path == "/api/chat":
+        if path in ("/api/detect", "/api/chat"):
             self._handle_chat()
         else:
             self.send_error(404, "Not found")
 
     def _handle_chat(self):
-        if not GEMINI_API_KEY:
-            self._send_json(
-                {"error": "GEMINI_API_KEY not configured on the server."},
-                status=500,
-            )
-            return
-
         try:
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length).decode("utf-8")
@@ -74,34 +140,58 @@ class AegisHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         user_message = data.get("message", "") or data.get("query", "") or ""
+
         if not user_message:
             self._send_json({"error": "No message provided"}, status=400)
             return
 
-        try:
-            result = process_prompt(user_message, GEMINI_API_KEY)
-            response = {
-                "message": user_message,
-                "sanitized_prompt": result["sanitized_prompt"],
-                "gemini_response": result["gemini_response"],
-                "reply": result["final_response"],
-                "detections": result["detections"],
-            }
-            self._send_json(response)
-        except Exception as exc:
-            self._send_json({"error": f"Gemini API error: {exc}"}, status=502)
+        # Run detector
+        detections = detect_sensitive_info(user_message)
+
+        # Build response
+        response = {
+            "message": user_message,
+            "detections": detections,
+            "summary": {
+                "total": len(detections),
+                "by_type": self._count_by_type(detections),
+            },
+            "reply": self._generate_reply(detections, user_message),
+        }
+        self._send_json(response)
+
+    def _count_by_type(self, detections):
+        counts = {}
+        for d in detections:
+            t = d["type"]
+            counts[t] = counts.get(t, 0) + 1
+        return counts
+
+    def _generate_reply(self, detections, message):
+        """Generate a contextual reply based on detections."""
+        if not detections:
+            return "No sensitive information detected in your message."
+
+        types_found = sorted(set(d["type"] for d in detections))
+        type_list = ", ".join(types_found)
+        total = len(detections)
+
+        reply = f"I detected {total} potential sensitive item(s) of type(s): {type_list}.\n\n"
+
+        for d in detections:
+            value_display = d["value"][:50] + "..." if len(d["value"]) > 50 else d["value"]
+            reply += f"- **{d['type']}**: `{value_display}`\n"
+
+        return reply.strip()
 
     def _send_json(self, data, status=200):
         payload = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(payload)))
-        self._cors_headers()
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(payload)
-
-    def _cors_headers(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
 
     def log_message(self, format, *args):
         sys.stderr.write(f"{self.address_string()} - {format % args}\n")
@@ -123,6 +213,4 @@ def run_server(port=None):
 
 
 if __name__ == "__main__":
-    if not GEMINI_API_KEY:
-        print("WARNING: GEMINI_API_KEY not set. Set it via: export GEMINI_API_KEY=your_key")
     run_server()
