@@ -128,7 +128,7 @@ def detect_sensitive_info(text: str) -> List[Dict[str, Any]]:
 
 if __name__ == "__main__":
     sample_text = (
-        "John Smith works at Acme Corp. Revenue was $5,000,000. "
+        "John Williams works. Revenue was $5,000,000. "
         "Email john@gmail.com. API key: sk-1234567890abcdef. Phone: +1-555-123-4567"
     )
 
@@ -138,4 +138,9 @@ if __name__ == "__main__":
         text = sample_text
 
     findings = detect_sensitive_info(text)
+
+    print("===== ORIGINAL INPUT =====")
+    print(text)
+
+    print("\n===== DETECTED INFORMATION =====")
     print(json.dumps(findings, indent=2))
