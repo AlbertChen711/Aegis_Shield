@@ -49,6 +49,9 @@ DESCRIPTIVE_PREFIXES = {
 }
 
 
+VISIBLE_TYPES = {"MONEY", "ORG", "ORGANIZATION", "PERCENTAGE", "FINANCIAL_NUMBER", "CREDIT_SCORE", "SALARY"}
+
+
 def sanitize(text: str) -> Tuple[str, Dict[str, str], str]:
     """Replace sensitive values with structured privacy tokens and return a safe legend."""
     detections = detect_sensitive_info(text)
@@ -64,6 +67,8 @@ def sanitize(text: str) -> Tuple[str, Dict[str, str], str]:
 
     for det in detections:
         category = det["type"]
+        if category in VISIBLE_TYPES:
+            continue
         value = det["value"]
         start = det["start"]
         end = det["end"]
