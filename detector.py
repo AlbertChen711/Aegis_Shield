@@ -256,6 +256,16 @@ def _detect_money(text: str, results: List[Dict[str, Any]]) -> None:
         ):
             if not _overlaps(results, match.start(), match.end()):
                 _add_result(results, "MONEY", candidate, match.start(), match.end())
+    dollar_context = re.finditer(r"\$\s*(\d[\d,]*(?:\.\d+)?)", text)
+    for match in dollar_context:
+        candidate = "$" + match.group(1)
+        if not _overlaps(results, match.start(), match.end()):
+            _add_result(results, "MONEY", candidate, match.start(), match.end())
+    bare_dollars = re.finditer(r"\b(\d[\d,]*(?:\.\d+)?)\s*(?:dollars?|bucks?|usd)\b", text, re.IGNORECASE)
+    for match in bare_dollars:
+        candidate = "$" + match.group(1)
+        if not _overlaps(results, match.start(), match.end()):
+            _add_result(results, "MONEY", candidate, match.start(), match.end())
 
 
 def _detect_secrets(text: str, results: List[Dict[str, Any]]) -> None:
