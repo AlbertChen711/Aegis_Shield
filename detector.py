@@ -60,8 +60,17 @@ ACCOUNT_RE = re.compile(
 # --- New categories ---
 
 ADDRESS_RE = re.compile(
-    r"\b\d{1,5}\s+(?:[A-Z][a-z]+\s+){1,4}(?:Street|St|Avenue|Ave|Boulevard|Blvd|Drive|Dr|Court|Ct|Road|Rd|Lane|Ln|Way|Place|Pl|Circle|Cir|Trail|Trl|Parkway|Pkwy|Highway|Hwy)\b",
-    re.IGNORECASE,
+    r"""
+    \b\d{1,5}\s+(?:[A-Za-z0-9]+\s+){0,3}
+    (?:Street|St|Avenue|Ave|Boulevard|Blvd|Drive|Dr|Court|Ct|Road|Rd|Lane|Ln|
+       Way|Place|Pl|Circle|Cir|Trail|Trl|Parkway|Pkwy|Highway|Hwy|
+       Apt|Apt\.|Unit|Suite|Ste\.|Ste|Floor|Fl)\b
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+ADDRESS_NAME_RE = re.compile(
+    r"\b\d{1,5}\s+(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})\b"
 )
 
 MEDICAL_RE = re.compile(
@@ -330,6 +339,9 @@ def _detect_addresses(text: str, results: List[Dict[str, Any]]) -> None:
     for match in ADDRESS_RE.finditer(text):
         if not _overlaps(results, match.start(), match.end()):
             _add_result(results, "ADDRESS", match.group(0), match.start(), match.end())
+    for match in ADDRESS_NAME_RE.finditer(text):
+        if not _overlaps(results, match.start(), match.end()):
+            _add_result(results, "ADDRESS", match.group(0), match.start(), match.end())
 
 
 def _detect_medical(text: str, results: List[Dict[str, Any]]) -> None:
@@ -435,6 +447,10 @@ def detect_sensitive_info(text: str) -> List[Dict[str, Any]]:
     # Deterministic regex passes (high-confidence patterns first)
     _detect_credit_cards(text, results)
     _detect_emails(text, results)
+
+    # Address detection BEFORE secrets to avoid overlap conflicts
+    _detect_addresses(text, results)
+
     _detect_contextual_secrets(text, results)
     _detect_secrets(text, results)
     _detect_bank_accounts(text, results)
@@ -447,7 +463,6 @@ def detect_sensitive_info(text: str) -> List[Dict[str, Any]]:
 
     # Context-aware passes (before generic MONEY so context overrides)
     _detect_salary(text, results)
-    _detect_addresses(text, results)
     _detect_money(text, results)
     _detect_financial_numbers(text, results)
     _detect_percentages(text, results)
@@ -458,12 +473,17 @@ def detect_sensitive_info(text: str) -> List[Dict[str, Any]]:
     _detect_confidential(text, results)
 
     # Fallback regex passes for orgs/names (only if spaCy didn't find them)
-    has_person = any(r["type"] == "PERSON" for r in results)
     has_org = any(r["type"] == "ORG" for r in results)
+    has_person = any(r["type"] == "PERSON" for r in results)
     if not has_org:
         _detect_orgs(text, results)
     if not has_person:
         _detect_people(text, results)
+
+    # Upgrade PERSON to ORG if the matched text also looks like an organization
+    for det in results:
+        if det["type"] == "PERSON" and ORG_RE.fullmatch(det["value"]):
+            det["type"] = "ORG"
 
     results.sort(key=lambda item: (item["start"], item["end"], item["type"]))
     return results
