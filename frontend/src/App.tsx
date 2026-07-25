@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import aegisLogo from './assets/aegis-logo.gif';
 
 // ---- Types ----
 
@@ -9,18 +10,11 @@ interface Detection {
   end: number;
 }
 
-interface SecurityReport {
-  threat_level: string;
-  safe_to_send: boolean;
-  detections: Array<{ type: string; replacement: string }>;
-}
-
 interface ChatResponse {
+  message: string;
   sanitized_prompt: string;
   reply: string;
   detections: Detection[];
-  legend?: string;
-  security_report?: SecurityReport;
 }
 
 interface Message {
@@ -29,8 +23,6 @@ interface Message {
   content: string;
   sanitizedPrompt?: string;
   detections?: Detection[];
-  legend?: string;
-  securityReport?: SecurityReport;
   timestamp: Date;
 }
 
@@ -70,47 +62,10 @@ function SanitizedPrompt({ prompt }: { prompt: string }) {
     <div className="sanitized-section">
       <button className="sanitized-toggle" onClick={() => setOpen(!open)}>
         <span>{open ? '▼' : '▶'}</span>
-        <span>What Ollama actually saw (PII masked)</span>
+        <span>What the model actually saw (PII masked)</span>
       </button>
       {open && (
         <pre className="sanitized-text">{prompt}</pre>
-      )}
-    </div>
-  );
-}
-
-function SecurityReportPanel({ report }: { report?: SecurityReport }) {
-  if (!report) return null;
-
-  return (
-    <div className="sanitized-section">
-      <div className="detections-header">
-        <span>🔐</span>
-        <span>Aegis Shield security report · {report.threat_level}</span>
-      </div>
-      <ul>
-        {report.detections.map((entry, index) => (
-          <li key={`${entry.type}-${index}`}>
-            {entry.type}: {entry.replacement}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function LegendPanel({ legend }: { legend: string }) {
-  const [open, setOpen] = useState(false);
-  if (!legend) return null;
-
-  return (
-    <div className="sanitized-section">
-      <button className="sanitized-toggle" onClick={() => setOpen(!open)}>
-        <span>{open ? '▼' : '▶'}</span>
-        <span>Placeholder Legend (variable mappings)</span>
-      </button>
-      {open && (
-        <pre className="sanitized-text">{legend}</pre>
       )}
     </div>
   );
@@ -123,7 +78,11 @@ function MessageBubble({ message }: { message: Message }) {
     <div className="message">
       <div className="message-inner">
         <div className={`message-avatar ${isUser ? 'user' : 'ai'}`}>
-          {isUser ? '👤' : '🛡️'}
+          {isUser ? (
+            '👤'
+          ) : (
+            <img src={aegisLogo} alt="Aegis Shield logo" className="avatar-logo" />
+          )}
         </div>
         <div className="message-content">
           <div className="message-role-label">
@@ -136,12 +95,6 @@ function MessageBubble({ message }: { message: Message }) {
           {!isUser && message.sanitizedPrompt && (
             <SanitizedPrompt prompt={message.sanitizedPrompt} />
           )}
-          {!isUser && message.securityReport && (
-            <SecurityReportPanel report={message.securityReport} />
-          )}
-          {!isUser && message.legend && (
-            <LegendPanel legend={message.legend} />
-          )}
         </div>
       </div>
     </div>
@@ -152,7 +105,9 @@ function LoadingIndicator() {
   return (
     <div className="message">
       <div className="message-inner">
-        <div className="message-avatar ai">🛡️</div>
+        <div className="message-avatar ai">
+          <img src={aegisLogo} alt="Aegis Shield logo" className="avatar-logo" />
+        </div>
         <div className="message-content">
           <div className="message-role-label">Aegis Shield</div>
           <div className="loading-dots">
@@ -226,8 +181,6 @@ export default function App() {
         content: data.reply,
         sanitizedPrompt: data.sanitized_prompt,
         detections: data.detections,
-        legend: data.legend,
-        securityReport: data.security_report,
         timestamp: new Date(),
       };
 
@@ -266,6 +219,10 @@ export default function App() {
   return (
     <div className="app">
       <aside className="sidebar">
+        <div className="sidebar-brand">
+          <img src={aegisLogo} alt="Aegis Shield logo" className="sidebar-logo" />
+          <span>Aegis Shield</span>
+        </div>
         <button className="new-chat-btn" onClick={handleNewChat}>
           <span>+</span>
           <span>New Chat</span>
@@ -273,7 +230,7 @@ export default function App() {
         <div className="sidebar-divider" />
         <div className="sidebar-info">
           <p>
-            Aegis Shield detects sensitive information in your messages, masks it before sending to Ollama, then restores it in the response.
+            Aegis Shield detects sensitive information in your messages, masks it before sending to the AI model, then restores it in the response.
           </p>
         </div>
       </aside>
@@ -282,11 +239,11 @@ export default function App() {
         <div className="chat-container">
           {messages.length === 0 ? (
             <div className="welcome-screen">
-              <div className="welcome-icon">🛡️</div>
+              <img src={aegisLogo} alt="Aegis Shield logo" className="welcome-logo" />
               <h1 className="welcome-title">Aegis Shield</h1>
               <p className="welcome-subtitle">
                 Your privacy-safe AI chatbot. PII is automatically detected, masked before
-                reaching Ollama, and restored in the response.
+                reaching the AI model, and restored in the response.
               </p>
               <div className="welcome-examples">
                 {EXAMPLES.map((ex, i) => (
