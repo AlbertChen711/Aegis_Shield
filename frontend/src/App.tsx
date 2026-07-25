@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import aegisLogo from './assets/aegis-logo.gif';
 
 // ---- Types ----
 
@@ -77,7 +78,11 @@ function MessageBubble({ message }: { message: Message }) {
     <div className="message">
       <div className="message-inner">
         <div className={`message-avatar ${isUser ? 'user' : 'ai'}`}>
-          {isUser ? '👤' : '🛡️'}
+          {isUser ? (
+            '👤'
+          ) : (
+            <img src={aegisLogo} alt="Aegis Shield logo" className="avatar-logo" />
+          )}
         </div>
         <div className="message-content">
           <div className="message-role-label">
@@ -100,7 +105,9 @@ function LoadingIndicator() {
   return (
     <div className="message">
       <div className="message-inner">
-        <div className="message-avatar ai">🛡️</div>
+        <div className="message-avatar ai">
+          <img src={aegisLogo} alt="Aegis Shield logo" className="avatar-logo" />
+        </div>
         <div className="message-content">
           <div className="message-role-label">Aegis Shield</div>
           <div className="loading-dots">
@@ -212,6 +219,10 @@ export default function App() {
   return (
     <div className="app">
       <aside className="sidebar">
+        <div className="sidebar-brand">
+          <img src={aegisLogo} alt="Aegis Shield logo" className="sidebar-logo" />
+          <span>Aegis Shield</span>
+        </div>
         <button className="new-chat-btn" onClick={handleNewChat}>
           <span>+</span>
           <span>New Chat</span>
@@ -228,7 +239,7 @@ export default function App() {
         <div className="chat-container">
           {messages.length === 0 ? (
             <div className="welcome-screen">
-              <div className="welcome-icon">🛡️</div>
+              <img src={aegisLogo} alt="Aegis Shield logo" className="welcome-logo" />
               <h1 className="welcome-title">Aegis Shield</h1>
               <p className="welcome-subtitle">
                 Your privacy-safe AI chatbot. PII is automatically detected, masked before
