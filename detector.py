@@ -61,16 +61,16 @@ ACCOUNT_RE = re.compile(
 
 ADDRESS_RE = re.compile(
     r"""
-    \b\d{1,5}\s+(?:[A-Za-z0-9]+\s+){0,3}
+    \b\d{1,5}\s+(?:[A-Z][a-z]+\s+){0,3}
     (?:Street|St|Avenue|Ave|Boulevard|Blvd|Drive|Dr|Court|Ct|Road|Rd|Lane|Ln|
        Way|Place|Pl|Circle|Cir|Trail|Trl|Parkway|Pkwy|Highway|Hwy|
        Apt|Apt\.|Unit|Suite|Ste\.|Ste|Floor|Fl)\b
     """,
-    re.IGNORECASE | re.VERBOSE,
+    re.VERBOSE,
 )
 
 ADDRESS_NAME_RE = re.compile(
-    r"\b\d{1,5}\s+(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})\b"
+    r"(?<![-\d])\b(\d{1,5}\s+(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3}))\b"
 )
 
 ADDRESS_NO_NUMBER_RE = re.compile(
@@ -424,13 +424,14 @@ def _detect_confidential(text: str, results: List[Dict[str, Any]]) -> None:
 
 def _detect_contextual_secrets(text: str, results: List[Dict[str, Any]]) -> None:
     patterns = [
-        (re.compile(r"\b(sk_(?:live|test)_[A-Za-z0-9]{16,})\b", re.IGNORECASE), "API_KEY"),
-        (re.compile(r"\b(sk-[A-Za-z0-9]{16,})\b", re.IGNORECASE), "API_KEY"),
+        (re.compile(r"\b(sk_(?:live|test)_[A-Za-z0-9]{8,})\b", re.IGNORECASE), "API_KEY"),
+        (re.compile(r"\b(sk-[A-Za-z0-9]{8,})\b", re.IGNORECASE), "API_KEY"),
         (re.compile(r"\b(AKIA[0-9A-Z]{16})\b", re.IGNORECASE), "AWS_KEY"),
         (re.compile(r"\b((?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}))\b", re.IGNORECASE), "API_KEY"),
         (re.compile(r"\b(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b", re.IGNORECASE), "JWT"),
         (re.compile(r"\b(?:api[_-]?key|token|access[_-]?token|secret|password|passwd|credential|auth[_-]?token)\s*[:=]\s*([^\s,;]{4,})", re.IGNORECASE), "PASSWORD"),
         (re.compile(r"\b(?:password|passwd|secret|credential)\s+(?:is|was|=|:)?\s*([^\s,;]{4,})", re.IGNORECASE), "PASSWORD"),
+        (re.compile(r"\b([a-z0-9]+(?:[-.][a-z0-9]+){2,})\b", re.IGNORECASE), "SECRET"),
     ]
 
     for pattern, kind in patterns:
@@ -441,11 +442,11 @@ def _detect_contextual_secrets(text: str, results: List[Dict[str, Any]]) -> None
             if not _overlaps(results, match.start(), match.end()):
                 _add_result(results, kind, value.strip(), match.start(), match.end())
 
-    for match in re.finditer(r"\b([A-Za-z0-9!@#$%^&*()_+=\-.]{14,})\b", text):
+    for match in re.finditer(r"\b([A-Za-z0-9!@#$%^&*()_+=\-.]{10,})\b", text):
         value = match.group(1)
-        if len(value) < 16:
+        if len(value) < 12:
             continue
-        if any(ch.isdigit() for ch in value) and any(ch.isalpha() for ch in value) and _estimate_entropy(value) >= 3.2:
+        if any(ch.isdigit() for ch in value) and any(ch.isalpha() for ch in value) and _estimate_entropy(value) >= 2.8:
             if not _overlaps(results, match.start(), match.end()):
                 _add_result(results, "SECRET", value, match.start(), match.end())
 
