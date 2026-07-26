@@ -18,10 +18,7 @@ EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+\u00C0-\u024F-]+@[A-Za-z0-9.\u00C0-\u024
 
 MONEY_RE = re.compile(
     r"""
-    (?:
-        \$\s?\d{1,3}(?:,\d{3})*(?:\.\d+)? |
-        \$?\d+(?:,\d{3})*(?:\.\d+)?(?:\s*(?:million|billion|thousand|m|bn|k))?
-    )
+    \$?\s?\d{1,3}(?:,\d{3})*(?:\.\d+)?(?:\s*(?:million|billion|thousand|m|bn|k))?
     """,
     re.IGNORECASE | re.VERBOSE,
 )
@@ -75,7 +72,11 @@ ADDRESS_NAME_RE = re.compile(
 
 ADDRESS_NO_NUMBER_RE = re.compile(
     r"""
-    \b(?:(?:house|apartment|apt|unit|floor|suite|building|bldg)\s+)?
+    \b(?:(?:house|apartment|apt|unit|floor|suite|building|bldg)\s+)
+    ([A-Za-z][A-Za-z0-9]+)
+    (?=\s|$|[,.])
+    |
+    \b(?:(?:house|apartment|apt|unit|floor|suite|building|bldg)\s+)
     ([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,1})
     \s+
     (?:Street|St|Avenue|Ave|Boulevard|Blvd|Drive|Dr|Court|Ct|Road|Rd|
@@ -366,10 +367,14 @@ def _detect_addresses(text: str, results: List[Dict[str, Any]]) -> None:
         if not _overlaps(results, match.start(), match.end()):
             _add_result(results, "ADDRESS", match.group(0), match.start(), match.end())
     for match in ADDRESS_NO_NUMBER_RE.finditer(text):
-        value = match.group(0).strip()
-        value = re.sub(r"^(?:at|on|in|by|near|from)\s+", "", value, flags=re.IGNORECASE)
-        if value and not _overlaps(results, match.start(), match.end()):
-            _add_result(results, "ADDRESS", value, match.start(), match.end())
+        value = (match.group(1) or match.group(2) or "").strip()
+        if not value or len(value) < 2:
+            continue
+        org_start = match.group(0).index(value)
+        start = match.start() + org_start
+        end = start + len(value)
+        if not _overlaps(results, start, end):
+            _add_result(results, "ADDRESS", value, start, end)
 
 
 def _detect_context_orgs(text: str, results: List[Dict[str, Any]]) -> None:
