@@ -69,7 +69,17 @@ class AegisHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         try:
-            result = process_prompt(user_message)
+            mask_types = data.get("maskTypes")
+            visible_types = None
+            if mask_types is not None:
+                ALL_TYPES = {
+                    "EMAIL", "MONEY", "SECRET", "PHONE", "PERSON", "ORG",
+                    "SSN", "CREDIT_CARD", "DOB", "IP_ADDRESS", "ADDRESS",
+                    "MEDICAL", "BANK_ACCOUNT", "CREDIT_SCORE", "SALARY",
+                    "CUSTOMER_ID", "CONFIDENTIAL", "PERCENTAGE", "FINANCIAL_NUMBER",
+                }
+                visible_types = ALL_TYPES - set(mask_types)
+            result = process_prompt(user_message, visible_types=visible_types)
             response = {
                 "message": user_message,
                 "sanitized_prompt": result["sanitized_prompt"],

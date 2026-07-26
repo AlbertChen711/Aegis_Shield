@@ -50,11 +50,13 @@ DESCRIPTIVE_PREFIXES = {
 }
 
 
-VISIBLE_TYPES = {"MONEY", "PERCENTAGE", "FINANCIAL_NUMBER", "CREDIT_SCORE", "SALARY"}
+DEFAULT_VISIBLE_TYPES = {"MONEY", "PERCENTAGE", "FINANCIAL_NUMBER", "CREDIT_SCORE", "SALARY"}
 
 
-def sanitize(text: str) -> Tuple[str, Dict[str, str], str]:
+def sanitize(text: str, visible_types: set = None) -> Tuple[str, Dict[str, str], str]:
     """Replace sensitive values with structured privacy tokens and return a safe legend."""
+    if visible_types is None:
+        visible_types = DEFAULT_VISIBLE_TYPES
     detections = detect_sensitive_info(text)
     if not detections:
         return text, {}, ""
@@ -68,7 +70,7 @@ def sanitize(text: str) -> Tuple[str, Dict[str, str], str]:
 
     for det in detections:
         category = det["type"]
-        if category in VISIBLE_TYPES:
+        if category in visible_types:
             continue
         value = det["value"]
         start = det["start"]
@@ -165,8 +167,8 @@ def call_ollama(sanitized_text: str, legend: str, model: str = "llama3.2:latest"
     return data.get("response", "")
 
 
-def process_prompt(user_prompt: str, model: str = None, base_url: str = None, api_key: str = "") -> dict:
-    sanitized, placeholder_map, legend = sanitize(user_prompt)
+def process_prompt(user_prompt: str, model: str = None, base_url: str = None, api_key: str = "", visible_types: set = None) -> dict:
+    sanitized, placeholder_map, legend = sanitize(user_prompt, visible_types=visible_types)
     model_name = model or os.environ.get("OLLAMA_MODEL", "llama3.2:latest")
     ollama_url = base_url or os.environ.get("OLLAMA_URL", "http://localhost:11434")
     outgoing_prompt = build_outgoing_prompt(sanitized, legend)

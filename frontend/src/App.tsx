@@ -199,7 +199,7 @@ function AuditModal({ audit, onClose }: { audit: AuditData; onClose: () => void 
   );
 }
 
-function LiveRiskIndicator({ input }: { input: string }) {
+function LiveRiskIndicator({ input, maskTypes }: { input: string; maskTypes: string[] }) {
   const [risk, setRisk] = useState<RiskScore | null>(null);
 
   useEffect(() => {
@@ -211,7 +211,7 @@ function LiveRiskIndicator({ input }: { input: string }) {
       fetch(`${API_BASE}/detect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: input, maskTypes }),
       })
         .then(r => r.json())
         .then(data => {
@@ -332,6 +332,26 @@ function LoadingIndicator() {
   );
 }
 
+const MASK_ENTITIES = [
+  { type: 'EMAIL', label: 'Email Addresses' },
+  { type: 'PHONE', label: 'Phone Numbers' },
+  { type: 'PERSON', label: 'Person Names' },
+  { type: 'ORG', label: 'Companies / Orgs' },
+  { type: 'ADDRESS', label: 'Addresses' },
+  { type: 'SSN', label: 'SSN' },
+  { type: 'CREDIT_CARD', label: 'Credit Cards' },
+  { type: 'DOB', label: 'Dates of Birth' },
+  { type: 'IP_ADDRESS', label: 'IP Addresses' },
+  { type: 'SECRET', label: 'API Keys / Secrets' },
+  { type: 'MEDICAL', label: 'Medical Info' },
+  { type: 'BANK_ACCOUNT', label: 'Bank Accounts' },
+  { type: 'CREDIT_SCORE', label: 'Credit Scores' },
+  { type: 'MONEY', label: 'Money / Amounts' },
+  { type: 'SALARY', label: 'Salaries' },
+  { type: 'CONFIDENTIAL', label: 'Confidential Docs' },
+  { type: 'CUSTOMER_ID', label: 'Customer IDs' },
+];
+
 const EXAMPLES = [
   { label: '📧 Email Detection', text: 'Please send the report to john.doe@example.com and cc alice@company.org' },
   { label: '💰 Money Detection', text: 'The budget for Q4 is $5,000,000 and the CEO made $2 billion last year' },
@@ -344,6 +364,9 @@ export default function App() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [auditModal, setAuditModal] = useState<AuditData | null>(null);
+  const [maskTypes, setMaskTypes] = useState<Set<string>>(
+    new Set(MASK_ENTITIES.map(e => e.type))
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -377,7 +400,7 @@ export default function App() {
       const response = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage.content }),
+        body: JSON.stringify({ message: userMessage.content, maskTypes: maskTypesArray() }),
       });
 
       if (!response.ok) {
@@ -424,11 +447,22 @@ export default function App() {
     textareaRef.current?.focus();
   };
 
+  const handleToggleMask = (type: string) => {
+    setMaskTypes(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  };
+
   const handleNewChat = () => {
     setMessages([]);
     setInput('');
     textareaRef.current?.focus();
   };
+
+  const maskTypesArray = () => Array.from(maskTypes);
 
   return (
     <div className="app">
@@ -451,6 +485,21 @@ export default function App() {
           <span>+</span>
           <span>New Chat</span>
         </button>
+        <div className="sidebar-divider" />
+        <div className="mask-panel">
+          <div className="mask-panel-title">Mask Settings</div>
+          <div className="mask-panel-subtitle">Check to mask before sending to AI</div>
+          {MASK_ENTITIES.map(entity => (
+            <label className="mask-toggle" key={entity.type}>
+              <input
+                type="checkbox"
+                checked={maskTypes.has(entity.type)}
+                onChange={() => handleToggleMask(entity.type)}
+              />
+              <span className="mask-toggle-label">{entity.label}</span>
+            </label>
+          ))}
+        </div>
         <div className="sidebar-divider" />
         <div className="sidebar-info">
           <p>
@@ -493,7 +542,7 @@ export default function App() {
         </div>
 
         <div className="input-area">
-          <LiveRiskIndicator input={input} />
+          <LiveRiskIndicator input={input} maskTypes={maskTypesArray()} />
           <div className="input-container">
             <form onSubmit={handleSubmit}>
               <div className="input-wrapper">

@@ -114,6 +114,86 @@ code, pre {
   line-height: 1.5;
 }
 
+/* ===== Mask Panel ===== */
+.mask-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 4px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.mask-panel-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
+  padding: 4px 4px 0;
+}
+
+.mask-panel-subtitle {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.55);
+  text-shadow: 1px 1px 2px #000;
+  padding: 0 4px 6px;
+}
+
+.mask-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.mask-toggle:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.mask-toggle input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.mask-toggle input[type="checkbox"]:checked {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+.mask-toggle input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.mask-toggle-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
+  user-select: none;
+}
+
 /* ===== Main Content ===== */
 .main-content {
   flex: 1;
