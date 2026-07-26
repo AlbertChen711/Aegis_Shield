@@ -10,11 +10,44 @@ interface Detection {
   end: number;
 }
 
+interface RiskItem {
+  type: string;
+  description: string;
+  severity: string;
+  points: number;
+}
+
+interface RiskScore {
+  risk_score: number;
+  risk_level: string;
+  risk_label: string;
+  category_a: { points: number; max: number; label: string };
+  category_b: { points: number; max: number; label: string };
+  category_c: { points: number; max: number; label: string };
+  detected_items: RiskItem[];
+  recommendation: string;
+}
+
+interface ProtectedItem {
+  original: string;
+  placeholder: string;
+  category: string;
+}
+
+interface AuditData {
+  original: string;
+  sent_to_ai: string;
+  protected_items: ProtectedItem[];
+  risk: RiskScore;
+}
+
 interface ChatResponse {
   message: string;
   sanitized_prompt: string;
   reply: string;
   detections: Detection[];
+  risk: RiskScore;
+  audit: AuditData;
 }
 
 interface Message {
@@ -23,6 +56,8 @@ interface Message {
   content: string;
   sanitizedPrompt?: string;
   detections?: Detection[];
+  risk?: RiskScore;
+  audit?: AuditData;
   timestamp: Date;
 }
 
@@ -34,7 +69,175 @@ function generateId(): string {
 
 const API_BASE = '/api';
 
+function riskColor(score: number): string {
+  if (score <= 25) return '#22c55e';
+  if (score <= 50) return '#eab308';
+  if (score <= 75) return '#f97316';
+  return '#ef4444';
+}
+
 // ---- Components ----
+
+function RiskBadge({ score }: { score: number }) {
+  const color = riskColor(score);
+  return (
+    <span className="risk-badge" style={{ borderColor: color, color }}>
+      {score}/100
+    </span>
+  );
+}
+
+function RiskPanel({ risk }: { risk: RiskScore }) {
+  const color = riskColor(risk.risk_score);
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="risk-panel">
+      <button className="risk-toggle" onClick={() => setOpen(!open)}>
+        <div className="risk-toggle-left">
+          <span className="risk-toggle-icon">{open ? '▼' : '▶'}</span>
+          <span className="risk-toggle-label">Risk Analysis</span>
+          <RiskBadge score={risk.risk_score} />
+        </div>
+        <span className={`risk-level-dot ${risk.risk_level.toLowerCase()}`}></span>
+      </button>
+      {open && (
+        <div className="risk-body">
+          <div className="risk-score-display">
+            <div className="risk-score-number" style={{ color }}>{risk.risk_score}</div>
+            <div className="risk-score-max">/100</div>
+            <div className="risk-score-label">{risk.risk_level}</div>
+          </div>
+          <div className="risk-bar-track">
+            <div className="risk-bar-fill" style={{ width: `${risk.risk_score}%`, background: color }}></div>
+          </div>
+          <div className="risk-categories">
+            <div className="risk-cat">
+              <span className="risk-cat-label">{risk.category_a.label}</span>
+              <span className="risk-cat-points">{risk.category_a.points}/{risk.category_a.max}</span>
+            </div>
+            <div className="risk-cat">
+              <span className="risk-cat-label">{risk.category_b.label}</span>
+              <span className="risk-cat-points">{risk.category_b.points}/{risk.category_b.max}</span>
+            </div>
+            <div className="risk-cat">
+              <span className="risk-cat-label">{risk.category_c.label}</span>
+              <span className="risk-cat-points">{risk.category_c.points}/{risk.category_c.max}</span>
+            </div>
+          </div>
+          {risk.detected_items.length > 0 && (
+            <div className="risk-items">
+              <div className="risk-items-title">Detected</div>
+              {risk.detected_items.map((item, i) => (
+                <div className="risk-item" key={i}>
+                  <span className={`risk-severity ${item.severity.toLowerCase()}`}>{item.severity}</span>
+                  <span className="risk-item-type">{item.type}</span>
+                  <span className="risk-item-desc">{item.description}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="risk-recommendation">
+            <span className="risk-rec-icon">✓</span>
+            <span>{risk.recommendation}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AuditModal({ audit, onClose }: { audit: AuditData; onClose: () => void }) {
+  return (
+    <div className="audit-overlay" onClick={onClose}>
+      <div className="audit-modal" onClick={e => e.stopPropagation()}>
+        <div className="audit-header">
+          <h2>Privacy Audit</h2>
+          <button className="audit-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="audit-body">
+          <div className="audit-section">
+            <div className="audit-section-title">Original Prompt</div>
+            <pre className="audit-text original">{audit.original}</pre>
+          </div>
+          <div className="audit-section">
+            <div className="audit-section-title">Sent to AI</div>
+            <pre className="audit-text sanitized">{audit.sent_to_ai}</pre>
+          </div>
+          {audit.protected_items.length > 0 && (
+            <div className="audit-section">
+              <div className="audit-section-title">Protected Items</div>
+              <div className="audit-protected-list">
+                {audit.protected_items.map((item, i) => (
+                  <div className="audit-protected-item" key={i}>
+                    <div className="audit-protected-left">
+                      <span className="audit-original-val">{item.original}</span>
+                      <span className="audit-arrow">→</span>
+                      <span className="audit-placeholder-val">{item.placeholder}</span>
+                    </div>
+                    <span className="audit-category">{item.category}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="audit-section">
+            <div className="audit-section-title">Risk Score: {audit.risk.risk_score}/100</div>
+            <div className="risk-bar-track">
+              <div className="risk-bar-fill" style={{ width: `${audit.risk.risk_score}%`, background: riskColor(audit.risk.risk_score) }}></div>
+            </div>
+            {audit.risk.detected_items.map((item, i) => (
+              <div className="audit-risk-item" key={i}>
+                <span className={`risk-severity ${item.severity.toLowerCase()}`}>{item.severity}</span>
+                <span>{item.type}: {item.description}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LiveRiskIndicator({ input }: { input: string }) {
+  const [risk, setRisk] = useState<RiskScore | null>(null);
+
+  useEffect(() => {
+    if (!input.trim()) {
+      setRisk(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch(`${API_BASE}/detect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.risk) setRisk(data.risk);
+        })
+        .catch(() => {});
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [input]);
+
+  if (!risk) return null;
+  const color = riskColor(risk.risk_score);
+
+  return (
+    <div className="live-risk">
+      <div className="live-risk-bar">
+        <div className="live-risk-fill" style={{ width: `${risk.risk_score}%`, background: color }}></div>
+      </div>
+      <div className="live-risk-info">
+        <span className="live-risk-label">Risk</span>
+        <span className="live-risk-score" style={{ color }}>{risk.risk_score}/100</span>
+        <span className={`live-risk-level ${risk.risk_level.toLowerCase()}`}>{risk.risk_level}</span>
+      </div>
+    </div>
+  );
+}
 
 function DetectionsPanel({ detections }: { detections: Detection[] }) {
   if (!detections || detections.length === 0) return null;
@@ -71,7 +274,7 @@ function SanitizedPrompt({ prompt }: { prompt: string }) {
   );
 }
 
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message, onAudit }: { message: Message; onAudit: (audit: AuditData) => void }) {
   const isUser = message.role === 'user';
 
   return (
@@ -89,11 +292,19 @@ function MessageBubble({ message }: { message: Message }) {
             {isUser ? 'You' : 'Aegis Shield'}
           </div>
           <div className="message-text">{message.content}</div>
+          {!isUser && message.risk && (
+            <RiskPanel risk={message.risk} />
+          )}
           {!isUser && message.detections && message.detections.length > 0 && (
             <DetectionsPanel detections={message.detections} />
           )}
           {!isUser && message.sanitizedPrompt && (
             <SanitizedPrompt prompt={message.sanitizedPrompt} />
+          )}
+          {!isUser && message.audit && (
+            <button className="audit-btn" onClick={() => onAudit(message.audit!)}>
+              View Privacy Audit
+            </button>
           )}
         </div>
       </div>
@@ -132,6 +343,7 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [auditModal, setAuditModal] = useState<AuditData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -181,6 +393,8 @@ export default function App() {
         content: data.reply,
         sanitizedPrompt: data.sanitized_prompt,
         detections: data.detections,
+        risk: data.risk,
+        audit: data.audit,
         timestamp: new Date(),
       };
 
@@ -270,7 +484,7 @@ export default function App() {
           ) : (
             <div className="messages-list">
               {messages.map(msg => (
-                <MessageBubble key={msg.id} message={msg} />
+                <MessageBubble key={msg.id} message={msg} onAudit={(a) => setAuditModal(a)} />
               ))}
               {isLoading && <LoadingIndicator />}
               <div ref={messagesEndRef} />
@@ -279,6 +493,7 @@ export default function App() {
         </div>
 
         <div className="input-area">
+          <LiveRiskIndicator input={input} />
           <div className="input-container">
             <form onSubmit={handleSubmit}>
               <div className="input-wrapper">
@@ -307,6 +522,10 @@ export default function App() {
           </div>
         </div>
       </main>
+
+      {auditModal && (
+        <AuditModal audit={auditModal} onClose={() => setAuditModal(null)} />
+      )}
     </div>
   );
 }

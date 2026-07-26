@@ -75,6 +75,8 @@ class AegisHandler(http.server.SimpleHTTPRequestHandler):
                 "sanitized_prompt": result["sanitized_prompt"],
                 "reply": result["final_response"],
                 "detections": result["detections"],
+                "risk": result["risk"],
+                "audit": result["audit"],
             }
             self._send_json(response)
         except Exception as exc:

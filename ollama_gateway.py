@@ -4,6 +4,7 @@ import requests
 from typing import Dict, List, Tuple
 
 from detector import detect_sensitive_info
+from risk_score import calculate_risk, build_audit
 
 SYSTEM_INSTRUCTION = """\
 You are a privacy-preserving assistant operating inside an AI firewall. \
@@ -175,6 +176,9 @@ def process_prompt(user_prompt: str, model: str = None, base_url: str = None, ap
     detections = detect_sensitive_info(user_prompt)
     security_report = build_security_report(detections, placeholder_map)
 
+    risk = calculate_risk(user_prompt, detections)
+    audit = build_audit(user_prompt, sanitized, detections, placeholder_map, risk)
+
     return {
         "sanitized_prompt": sanitized,
         "ollama_response": ollama_raw,
@@ -183,4 +187,6 @@ def process_prompt(user_prompt: str, model: str = None, base_url: str = None, ap
         "legend": legend,
         "placeholder_map": placeholder_map,
         "security_report": security_report,
+        "risk": risk,
+        "audit": audit,
     }
